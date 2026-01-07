@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="fr">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gestion des Posts</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+
+<body>
+    <div class="container">
+        <h1>📝 Gestion des Posts</h1>
+
+        <!-- Formulaire de création -->
+        <div class="card">
+            <h2 class="section-title">Créer un nouveau post</h2>
+            <div class="form-group">
+                <label for="title">Titre</label>
+                <input type="text" id="title" placeholder="Entrez le titre du post">
+            </div>
+            <div class="form-group">
+                <label for="content">Contenu</label>
+                <textarea id="content" placeholder="Entrez le contenu du post"></textarea>
+            </div>
+            <button onclick="createPost()">Créer le post</button>
+        </div>
+
+        <!-- Formulaire de modification (caché par défaut) -->
+        <div class="card" id="editSection">
+            <h2 class="section-title">Modifier le post</h2>
+            <input type="hidden" id="editId">
+            <div class="form-group">
+                <label for="editTitle">Titre</label>
+                <input type="text" id="editTitle">
+            </div>
+            <div class="form-group">
+                <label for="editContent">Contenu</label>
+                <textarea id="editContent"></textarea>
+            </div>
+            <button onclick="updatePost()">Mettre à jour</button>
+            <button onclick="cancelEdit()" style="background: #999; margin-left: 1rem;">Annuler</button>
+        </div>
+
+        <!-- Liste des posts -->
+        <div class="card">
+            <h2 class="section-title">Liste des posts</h2>
+            <div class="posts-grid" id="postsList"></div>
+        </div>
+    </div>
+
+    <script>
+        const API_URL = 'http://localhost:3000/api/posts';
+
+        // Charger tous les posts
+        async function loadPosts() {
+            try {
+                const response = await fetch(API_URL);
+                const posts = await response.json();
+                displayPosts(posts);
+            } catch (error) {
+                console.error('Erreur:', error);
+                alert('Erreur lors du chargement des posts');
+            }
+        }
+
+        // Afficher les posts
+        function displayPosts(posts) {
+            const postsList = document.getElementById('postsList');
+
+            if (posts.length === 0) {
+                postsList.innerHTML = '<p style="color: #999;">Aucun post pour le moment.</p>';
+                return;
+            }
+
+            postsList.innerHTML = posts.map(post => `
+                <div class="post-card">
+                    <div class="post-id">ID: ${post.id}</div>
+                    <h3>${post.title}</h3>
+                    <p>${post.content}</p>
+                    <div class="post-actions">
+                        <button class="btn-edit" onclick="editPost(${post.id})">Modifier</button>
+                        <button class="btn-delete" onclick="deletePost(${post.id})">Supprimer</button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // Créer un post
+        async function createPost() {
+            const title = document.getElementById('title').value;
+            const content = document.getElementById('content').value;
+
+            if (!title || !content) {
+                alert('Veuillez remplir tous les champs');
+                return;
+            }
+
+            try {
+                const response = await fetch(API_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ title, content })
+                });
+
+                if (response.ok) {
+                    document.getElementById('title').value = '';
+                    document.getElementById('content').value = '';
+                    loadPosts();
+                }
+            } catch (error) {
+                console.error('Erreur:', error);
+                alert('Erreur lors de la création du post');
+            }
+        }
+
+        // Préparer l'édition
+        async function editPost(id) {
+            try {
+                const response = await fetch(`${API_URL}/${id}`);
+                const post = await response.json();
+
+                document.getElementById('editId').value = post.id;
+                document.getElementById('editTitle').value = post.title;
+                document.getElementById('editContent').value = post.content;
+                document.getElementById('editSection').style.display = 'block';
+
+                // Scroll vers le formulaire d'édition
+                document.getElementById('editSection').scrollIntoView({ behavior: 'smooth' });
+            } catch (error) {
+                console.error('Erreur:', error);
+                alert('Erreur lors du chargement du post');
+            }
+        }
+
+        // Mettre à jour un post
+        async function updatePost() {
+            const id = document.getElementById('editId').value;
+            const title = document.getElementById('editTitle').value;
+            const content = document.getElementById('editContent').value;
+
+            try {
+                const response = await fetch(`${API_URL}/${id}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ title, content })
+                });
+
+                if (response.ok) {
+                    cancelEdit();
+                    loadPosts();
+                }
+            } catch (error) {
+                console.error('Erreur:', error);
+                alert('Erreur lors de la mise à jour du post');
+            }
+        }
+
+        // Annuler l'édition
+        function cancelEdit() {
+            document.getElementById('editSection').style.display = 'none';
+            document.getElementById('editId').value = '';
+            document.getElementById('editTitle').value = '';
+            document.getElementById('editContent').value = '';
+        }
+
+        // Supprimer un post
+        async function deletePost(id) {
+            if (!confirm('Êtes-vous sûr de vouloir supprimer ce post ?')) {
+                return;
+            }
+
+            try {
+                const response = await fetch(`${API_URL}/${id}`, {
+                    method: 'DELETE'
+                });
+
+                if (response.ok) {
+                    loadPosts();
+                }
+            } catch (error) {
+                console.error('Erreur:', error);
+                alert('Erreur lors de la suppression du post');
+            }
+        }
+
+        // Charger les posts au démarrage
+        loadPosts();
+    </script>
+</body>
+
+</html>

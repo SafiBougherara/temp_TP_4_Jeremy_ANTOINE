@@ -1,0 +1,12 @@
+{
+  "name": "exercice-5",
+  "version": "1.0.0",
+  "description": "CRUD API with filesystem storage",
+  "main": "server.js",
+  "type": "module",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "author": "",
+  "license": "ISC"
+}
